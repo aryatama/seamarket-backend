@@ -143,10 +143,22 @@ const updateProduct = asyncHandler(async (req, res) => {
   res.status(200).json(updatedProduct);
 });
 
+const getProductPagination = asyncHandler(async (req, res) => {
+  const { key, limit, page } = req.params;
+  let skipVal = limit * (page - 1);
+  const searchData = await Product.find(
+    { name: new RegExp(key, "i") },
+    { limit: limit, skip: skipVal }
+  );
+  res.status(200).json(searchData);
+});
+
+
 module.exports = {
   createProduct,
   getProducts,
   getProduct,
   deleteProduct,
   updateProduct,
+  getProductPagination
 };

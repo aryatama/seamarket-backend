@@ -9,12 +9,12 @@ const productSchema = mongoose.Schema(
     },
     name: {
       type: String,
-      required: [true, "Please add product name"],
+      required: [true, "Masukan Nama Produk"],
       trim: true,
     },
     price: {
       type: String,
-      required: [true, "Please add product price"],
+      required: [true, "Masukan Harga Produk"],
       trim: true,
     },
     desc: {
@@ -26,6 +26,11 @@ const productSchema = mongoose.Schema(
     image: {
       type: Object,
       default: {},
+    },
+    pricePer: {
+      type: String,
+      required: [true, "Masukan satuan harga"],
+      trim: true,
     },
   },
   {
