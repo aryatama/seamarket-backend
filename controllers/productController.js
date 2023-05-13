@@ -4,22 +4,28 @@ const { fileSizeFormatter } = require("../utils/fileUpload");
 const cloudinary = require("cloudinary").v2;
 
 const createProduct = asyncHandler(async (req, res) => {
-  const { name, price, desc } = req.body;
+  const { name, price, desc, pricePer } = req.body;
 
   //   Validation
-  if (!name || !price) {
+  if (!name || !price || !pricePer) {
     res.status(400);
-    throw new Error("Please add the product name and price");
+    throw new Error("Masukan data produk dengan benar");
   }
 
   //Handle Image upload
+  const generateImageFromBuffer = (buffer) => {
+    let _buffer = new Buffer.from(buffer, "base64");
+    return _buffer.toString("base64");
+  };
 
   let fileData = {};
   if (req.file) {
     //Save image to cloudinary
+    let base64Str = generateImageFromBuffer(req.file.buffer);
+    let imageFile = `data:${req.file.mimetype};base64,${base64Str}`;
     let uploadedFile;
     try {
-      uploadedFile = await cloudinary.uploader.upload(req.file.path, {
+      uploadedFile = await cloudinary.uploader.upload(imageFile, {
         folder: "Seamarket Post",
         resource_type: "image",
       });
@@ -27,8 +33,11 @@ const createProduct = asyncHandler(async (req, res) => {
       res.status(500);
       throw new Error("Image could not be uploaded");
     }
+    console.log(uploadedFile);
     fileData = {
-      fileName: req.file.originalname,
+      // fileName: req.file.originalname,
+      fileName: uploadedFile.original_filename,
+      public_id: uploadedFile.public_id,
       filePath: uploadedFile.secure_url,
       fileType: req.file.mimetype,
       fileSize: fileSizeFormatter(req.file.size, 2),
@@ -40,6 +49,7 @@ const createProduct = asyncHandler(async (req, res) => {
     user: req.user.id,
     name,
     price,
+    pricePer,
     desc,
     image: fileData,
   });
@@ -153,12 +163,11 @@ const getProductPagination = asyncHandler(async (req, res) => {
   res.status(200).json(searchData);
 });
 
-
 module.exports = {
   createProduct,
   getProducts,
   getProduct,
   deleteProduct,
   updateProduct,
-  getProductPagination
+  getProductPagination,
 };

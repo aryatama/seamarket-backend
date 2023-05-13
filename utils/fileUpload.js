@@ -23,11 +23,12 @@ function fileFilter(req, file, cb) {
     cb(null, true);
   } else {
     cb(null, false);
-    // cb(new Error("I don't have a clue!"));
+    cb(new Error("Masukan file image (png/jpg/jpeg)"));
   }
 }
 
-const upload = multer({ storage, fileFilter });
+const upload = multer({ fileFilter: fileFilter });
+// const upload = multer({ storage, fileFilter });
 
 //File size formatter
 const fileSizeFormatter = (bytes, decimal) => {
