@@ -2,9 +2,12 @@ const asyncHandler = require("express-async-handler");
 const Product = require("../models/productModel");
 const { fileSizeFormatter } = require("../utils/fileUpload");
 const cloudinary = require("cloudinary").v2;
+const fs = require("fs");
+const { promisify } = require("util");
+const unlinkAsync = promisify(fs.unlink);
 
 const createProduct = asyncHandler(async (req, res) => {
-  const { name, price, desc, pricePer } = req.body;
+  const { name, price, desc, pricePer, image } = req.body;
 
   //   Validation
   if (!name || !price || !pricePer) {
@@ -13,38 +16,35 @@ const createProduct = asyncHandler(async (req, res) => {
   }
 
   //Handle Image upload
-  const generateImageFromBuffer = (buffer) => {
-    let _buffer = new Buffer.from(buffer, "base64");
-    return _buffer.toString("base64");
-  };
+  // const generateImageFromBuffer = (buffer) => {
+  //   let _buffer = new Buffer.from(buffer, "base64");
+  //   return _buffer.toString("base64");
+  // };
 
   let fileData = {};
   if (req.file) {
-    //Save image to cloudinary
-    let base64Str = generateImageFromBuffer(req.file.buffer);
-    let imageFile = `data:${req.file.mimetype};base64,${base64Str}`;
-    let uploadedFile;
     try {
-      uploadedFile = await cloudinary.uploader.upload(imageFile, {
+      uploadedFile = await cloudinary.uploader.upload(req.file.path, {
         folder: "Seamarket Post",
         resource_type: "image",
       });
+      await unlinkAsync(req.file.path);
     } catch (err) {
       res.status(500);
       throw new Error("Image could not be uploaded");
     }
     console.log(uploadedFile);
     fileData = {
-      // fileName: req.file.originalname,
       fileName: uploadedFile.original_filename,
       public_id: uploadedFile.public_id,
-      filePath: uploadedFile.secure_url,
-      fileType: req.file.mimetype,
+      uri: uploadedFile.secure_url,
+      type: req.file.mimetype,
       fileSize: fileSizeFormatter(req.file.size, 2),
     };
   }
+  var future = new Date();
 
-  //Create Product
+  // Create Product
   const product = await Product.create({
     user: req.user.id,
     name,
@@ -52,14 +52,44 @@ const createProduct = asyncHandler(async (req, res) => {
     pricePer,
     desc,
     image: fileData,
+    expDate: future.setDate(future.getDate() + 30),
   });
-
   res.status(201).json(product);
 });
 
 //Get all product
-const getProducts = asyncHandler(async (req, res) => {
-  const products = await Product.find({ user: req.user.id }).sort("-createdAt");
+const getMyProducts = asyncHandler(async (req, res) => {
+  const { limit, page } = req.params;
+  let skipVal = limit * (page - 1);
+  const products = await Product.find(
+    { user: req.user.id },
+    "_id name desc image pricePer expDate price createdAt",
+    {
+      limit: limit,
+      skip: skipVal,
+    }
+  ).sort("-createdAt");
+  const productsLenght = await Product.estimatedDocumentCount();
+
+  let response = {
+    length: productsLenght,
+    products: products,
+  };
+  res.status(200).json(response);
+});
+
+const getProductsPage = asyncHandler(async (req, res) => {
+  const { limit, page, id } = req.params;
+  let skipVal = limit * (page - 1);
+  const products = await Product.find(
+    { user: id },
+    "_id name desc image pricePer expDate price createdAt",
+    {
+      limit: limit,
+      skip: skipVal,
+    }
+  ).sort("-createdAt");
+  // const productsLength = await Product.estimatedDocumentCount();
   res.status(200).json(products);
 });
 
@@ -72,11 +102,6 @@ const getProduct = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Product not found");
   }
-  if (product.user.toString() !== req.user.id) {
-    res.status(401);
-    throw new Error("User not authorized");
-  }
-
   res.status(200).json(product);
 });
 
@@ -86,15 +111,16 @@ const deleteProduct = asyncHandler(async (req, res) => {
 
   if (!product) {
     res.status(404);
-    throw new Error("Product not found");
+    throw new Error("Produk Tidak Ditemukan");
   }
   if (product.user.toString() !== req.user.id) {
     res.status(401);
-    throw new Error("User not authorized");
+    throw new Error("Anda Tidak Punya Otoritas");
   }
   await product.deleteOne();
+  await cloudinary.uploader.destroy(product.image.public_id);
 
-  res.status(200).json({ message: "Product deleted" });
+  res.status(200).json({ message: "Berhasil Menghapus Produk" });
 });
 
 const updateProduct = asyncHandler(async (req, res) => {
@@ -163,11 +189,26 @@ const getProductPagination = asyncHandler(async (req, res) => {
   res.status(200).json(searchData);
 });
 
+const getSomeProduct = asyncHandler(async (req, res) => {
+  const { ids } = req.body;
+  if (!ids) {
+    res.status(400);
+    throw new Error("bad req");
+  }
+  const someProduct = await Product.find(
+    { _id: { $in: ids } },
+    "_id user name image price pricePer createdAt photo"
+  );
+  res.status(200).json(someProduct);
+});
+
 module.exports = {
   createProduct,
-  getProducts,
+  getMyProducts,
   getProduct,
   deleteProduct,
   updateProduct,
   getProductPagination,
+  getProductsPage,
+  getSomeProduct,
 };

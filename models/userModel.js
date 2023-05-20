@@ -69,6 +69,12 @@ const userSchema = mongoose.Schema(
         ref: "User",
       },
     ],
+    saved: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Product",
+      },
+    ],
   },
   {
     timestamps: true,

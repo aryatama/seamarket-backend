@@ -12,6 +12,7 @@ const {
   searchUser,
   getSomeUser,
   getUserById,
+  saveProduct,
 } = require("../controllers/userController");
 const protect = require("../middleware/authMiddleware");
 const router = express.Router();
@@ -26,6 +27,7 @@ router.patch("/changepassword", protect, changePassword);
 router.post("/forgotpassword", forgotPassword);
 router.patch("/subscribe", protect, subscribe);
 router.patch("/unsubscribe", protect, unsubscribe);
+router.get("/:productId", protect, saveProduct);
 router.get("/search/:limit/:page/:key", protect, searchUser);
 router.post("/getsomeuser", protect, getSomeUser);
 

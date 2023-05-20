@@ -55,6 +55,7 @@ const registerUser = asyncHandler(async (req, res) => {
       availableWA,
       status,
       role,
+      saved
     } = user;
 
     res.status(201).json({
@@ -71,6 +72,7 @@ const registerUser = asyncHandler(async (req, res) => {
       availableWA,
       status,
       role,
+      saved
     });
   } else {
     res.status(400);
@@ -115,6 +117,7 @@ const loginUser = asyncHandler(async (req, res) => {
       availableWA,
       status,
       role,
+      saved
     } = user;
     res.status(200).json({
       _id,
@@ -130,6 +133,7 @@ const loginUser = asyncHandler(async (req, res) => {
       availableWA,
       status,
       role,
+      saved
     });
   } else if (user && isUsingResetPassword) {
     const { _id, name, email, photo, phone, about, address } = user;
@@ -178,6 +182,7 @@ const getUser = asyncHandler(async (req, res) => {
       availableWA,
       status,
       role,
+      saved
     } = user;
     res.status(200).json({
       _id,
@@ -192,6 +197,7 @@ const getUser = asyncHandler(async (req, res) => {
       availableWA,
       status,
       role,
+      saved
     });
   } else {
     res.status(404);
@@ -201,6 +207,10 @@ const getUser = asyncHandler(async (req, res) => {
 
 const getUserById = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);
+  const productCount = await Product.estimatedDocumentCount({
+    user: req.params.id,
+  });
+
   if (user) {
     const {
       _id,
@@ -229,6 +239,7 @@ const getUserById = asyncHandler(async (req, res) => {
       availableWA,
       status,
       role,
+      productCount: productCount,
     });
   } else {
     res.status(404);
@@ -261,21 +272,22 @@ const updateUser = asyncHandler(async (req, res) => {
     user.status = req.body.status || status;
 
     const updatedUser = await user.save();
+    res.status(200).json(updatedUser);
 
-    res.status(200).json({
-      _id: updatedUser._id,
-      email: updatedUser.email,
-      name: updatedUser.name,
-      phone: updatedUser.phone,
-      photo: updatedUser.photo,
-      about: updatedUser.about,
-      address: updatedUser.address,
-      availableWA: updatedUser.availableWA,
-      role: updatedUser.role,
-      status: updatedUser.status,
-      subscribers: updatedUser.subscribers,
-      subscription: updatedUser.subscription,
-    });
+    // res.status(200).json({
+    //   _id: updatedUser._id,
+    //   email: updatedUser.email,
+    //   name: updatedUser.name,
+    //   phone: updatedUser.phone,
+    //   photo: updatedUser.photo,
+    //   about: updatedUser.about,
+    //   address: updatedUser.address,
+    //   availableWA: updatedUser.availableWA,
+    //   role: updatedUser.role,
+    //   status: updatedUser.status,
+    //   subscribers: updatedUser.subscribers,
+    //   subscription: updatedUser.subscription,
+    // });
   } else {
     res.status(404);
     throw new Error("User not found");
@@ -389,6 +401,30 @@ const unsubscribe = asyncHandler(async (req, res) => {
   res.status(200).json({ myUser: updatedMyUser, user: updatedUser });
 });
 
+const saveProduct = asyncHandler(async (req, res) => {
+  const { productId } = req.params;
+  console.log("product id", productId);
+  const product = await Product.findById(productId);
+  const user = await User.findById(req.user.id);
+  if (!product) {
+    res.status(404);
+    throw new Error("Produk tidak ditemukan");
+  }
+
+  if (user.saved.includes(productId)) {
+    await product.saver.pull(req.user.id);
+    await user.saved.pull(productId);
+  } else {
+    await product.saver.push(req.user.id);
+    await user.saved.push(productId);
+  }
+
+  const updatedProduct = await product.save();
+  const updatedUser = await user.save();
+
+  res.status(200).json({ product: updatedProduct });
+});
+
 const searchUser = asyncHandler(async (req, res) => {
   const { key, limit, page } = req.params;
   let skipVal = limit * (page - 1);
@@ -423,6 +459,7 @@ module.exports = {
   unsubscribe,
   searchUser,
   getSomeUser,
+  saveProduct,
 };
 
 // //Create reset Token

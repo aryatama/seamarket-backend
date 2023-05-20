@@ -32,6 +32,16 @@ const productSchema = mongoose.Schema(
       required: [true, "Masukan satuan harga"],
       trim: true,
     },
+    expDate: {
+      type: Date,
+      required: true,
+    },
+    saver: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
   },
   {
     timestamps: true,

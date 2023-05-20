@@ -27,8 +27,8 @@ function fileFilter(req, file, cb) {
   }
 }
 
-const upload = multer({ fileFilter: fileFilter });
-// const upload = multer({ storage, fileFilter });
+// const upload = multer({ fileFilter: fileFilter });
+const upload = multer({ storage, fileFilter });
 
 //File size formatter
 const fileSizeFormatter = (bytes, decimal) => {
