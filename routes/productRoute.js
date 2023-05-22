@@ -8,6 +8,7 @@ const {
   getMyProducts,
   getProductsPage,
   getSomeProduct,
+  getSubscriptionProduct,
 } = require("../controllers/productController");
 const protect = require("../middleware/authMiddleware");
 const { upload } = require("../utils/fileUpload");
@@ -22,5 +23,6 @@ router.get("/:id", protect, getProduct);
 router.delete("/:id", protect, deleteProduct);
 router.get("/search/:limit/:page/:key", protect, getProductPagination);
 router.post("/getsomeproduct", protect, getSomeProduct);
+router.post("/getsubscriptionproduct/:limit/:page", protect, getSubscriptionProduct);
 
 module.exports = router;

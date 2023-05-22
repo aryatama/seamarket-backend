@@ -55,7 +55,7 @@ const registerUser = asyncHandler(async (req, res) => {
       availableWA,
       status,
       role,
-      saved
+      saved,
     } = user;
 
     res.status(201).json({
@@ -72,7 +72,7 @@ const registerUser = asyncHandler(async (req, res) => {
       availableWA,
       status,
       role,
-      saved
+      saved,
     });
   } else {
     res.status(400);
@@ -117,7 +117,7 @@ const loginUser = asyncHandler(async (req, res) => {
       availableWA,
       status,
       role,
-      saved
+      saved,
     } = user;
     res.status(200).json({
       _id,
@@ -133,7 +133,7 @@ const loginUser = asyncHandler(async (req, res) => {
       availableWA,
       status,
       role,
-      saved
+      saved,
     });
   } else if (user && isUsingResetPassword) {
     const { _id, name, email, photo, phone, about, address } = user;
@@ -182,8 +182,10 @@ const getUser = asyncHandler(async (req, res) => {
       availableWA,
       status,
       role,
-      saved
+      saved,
     } = user;
+
+   
     res.status(200).json({
       _id,
       name,
@@ -197,7 +199,7 @@ const getUser = asyncHandler(async (req, res) => {
       availableWA,
       status,
       role,
-      saved
+      saved,
     });
   } else {
     res.status(404);
