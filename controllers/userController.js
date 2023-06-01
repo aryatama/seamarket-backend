@@ -4,6 +4,12 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const Product = require("../models/productModel");
+const { default: mongoose } = require("mongoose");
+const { fileSizeFormatter } = require("../utils/fileUpload");
+const cloudinary = require("cloudinary").v2;
+const fs = require("fs");
+const { promisify } = require("util");
+const unlinkAsync = promisify(fs.unlink);
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
@@ -185,7 +191,6 @@ const getUser = asyncHandler(async (req, res) => {
       saved,
     } = user;
 
-   
     res.status(200).json({
       _id,
       name,
@@ -251,6 +256,32 @@ const getUserById = asyncHandler(async (req, res) => {
 
 const updateUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
+
+  let fileData = {};
+  if (req.file) {
+    try {
+      uploadedFile = await cloudinary.uploader.upload(req.file.path, {
+        folder: "Seamarket Profile",
+        resource_type: "image",
+      });
+      await unlinkAsync(req.file.path);
+    } catch (err) {
+      res.status(500);
+      throw new Error("Image could not be uploaded");
+    }
+    // console.log(uploadedFile);
+    if (user?.photo_public_id) {
+      await cloudinary.uploader.destroy(user.photo_public_id);
+    }
+    fileData = {
+      fileName: uploadedFile.original_filename,
+      public_id: uploadedFile.public_id,
+      uri: uploadedFile.secure_url,
+      type: req.file.mimetype,
+      fileSize: fileSizeFormatter(req.file.size, 2),
+    };
+  }
+  
   if (user) {
     const {
       name,
@@ -262,16 +293,18 @@ const updateUser = asyncHandler(async (req, res) => {
       availableWA,
       role,
       status,
+      photo_public_id
     } = user;
     user.email = email;
     user.name = req.body.name || name;
     user.phone = req.body.phone || phone;
-    user.photo = req.body.photo || photo;
+    user.photo = fileData?.uri || photo;
     user.about = req.body.about || about;
     user.address = req.body.address || address;
     user.availableWA = req.body.availableWA || availableWA;
     user.role = req.body.role || role;
     user.status = req.body.status || status;
+    user.photo_public_id = fileData?.public_id || photo_public_id || null;
 
     const updatedUser = await user.save();
     res.status(200).json(updatedUser);
@@ -363,10 +396,8 @@ const subscribe = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("User does not exists");
   }
-  const isSubscribed = await User.exists({ subscription: id }).select({
-    _id: req.user.id,
-  });
-  if (isSubscribed) {
+  const { subscription } = user;
+  if (subscription.includes(id)) {
     res.status(400);
     throw new Error("Already Subscribed");
   }
@@ -387,10 +418,8 @@ const unsubscribe = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("User does not exists");
   }
-  const isSubscribed = await User.exists({ subscription: id }).select({
-    _id: req.user.id,
-  });
-  if (!isSubscribed) {
+  const { subscription } = user;
+  if (!subscription.includes(id)) {
     res.status(400);
     throw new Error("You are not Subscribed");
   }
@@ -448,6 +477,105 @@ const getSomeUser = asyncHandler(async (req, res) => {
   res.status(200).json(someUser);
 });
 
+const getSubUserByNewProduct = asyncHandler(async (req, res) => {
+  const { ids } = req.body;
+  if (!ids) {
+    res.status(400);
+    throw new Error("bad req");
+  }
+  const objIds = ids.map((el) => {
+    return new mongoose.Types.ObjectId(el);
+  });
+  // let today = new Date("2023-05-25");
+  let today = new Date().toDateString();
+  const someUser = await User.aggregate([
+    { $match: { _id: { $in: objIds } } },
+    // { $match: { name: "Budi Pancing" } },
+    {
+      $lookup: {
+        from: "products",
+        localField: "_id",
+        foreignField: "user",
+        as: "products",
+      },
+    },
+    { $unwind: "$products" },
+    // { $match: { "products.name": "Ikan bawal" } },
+    {
+      $match: {
+        "products.createdAt": { $gte: new Date(today) },
+      },
+    },
+    {
+      $group: {
+        _id: "$_id",
+        // name: "$name",
+        name: { $first: "$name" },
+        photo: { $first: "$photo" },
+        // productid: { $first: "$products._id" },
+        // name: { $first: "$products.name" },
+      },
+    },
+  ]);
+
+  if (someUser) {
+    res.status(200).json(someUser);
+  } else {
+    res.status(400);
+    throw new Error("getSubUserByNewProduct");
+  }
+});
+const getUserByNewProduct = asyncHandler(async (req, res) => {
+  let today = new Date().toDateString();
+  const user = await User.findById(req.user.id);
+  const { subscription, _id } = user;
+  // let today = new Date("2023-05-25");
+  console.log(subscription);
+  const someUser = await User.aggregate([
+    {
+      $match: {
+        _id: { $nin: [...subscription, _id] },
+        role: "penjual",
+      },
+    },
+    {
+      $lookup: {
+        from: "products",
+        localField: "_id",
+        foreignField: "user",
+        as: "products",
+      },
+    },
+    { $unwind: "$products" },
+    // {
+    //   $match: {
+    //     "products.createdAt": { $gte: new Date(today) },
+    //   },
+    // },
+    {
+      $sort: {
+        "products.createdAt": -1,
+      },
+    },
+    { $limit: 10 },
+    {
+      $group: {
+        _id: "$_id",
+        name: { $first: "$name" },
+        photo: { $first: "$photo" },
+        address: { $first: "$address" },
+      },
+    },
+  ]);
+
+  if (someUser) {
+    res.status(200).json(someUser);
+  } else {
+    res.status(400);
+    throw new Error("getUserByNewProduct");
+  }
+});
+
 module.exports = {
   registerUser,
   loginUser,
@@ -462,6 +590,8 @@ module.exports = {
   searchUser,
   getSomeUser,
   saveProduct,
+  getSubUserByNewProduct,
+  getUserByNewProduct,
 };
 
 // //Create reset Token

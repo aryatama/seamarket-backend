@@ -13,6 +13,8 @@ const {
   getSomeUser,
   getUserById,
   saveProduct,
+  getSubUserByNewProduct,
+  getUserByNewProduct,
 } = require("../controllers/userController");
 const protect = require("../middleware/authMiddleware");
 const { upload } = require("../utils/fileUpload");
@@ -31,5 +33,7 @@ router.patch("/unsubscribe", protect, unsubscribe);
 router.get("/:productId", protect, saveProduct);
 router.get("/search/:limit/:page/:key", protect, searchUser);
 router.post("/getsomeuser", protect, getSomeUser);
+router.post("/getsubuserbynewproduct", protect, getSubUserByNewProduct);
+router.post("/getuserbynewproduct", protect, getUserByNewProduct);
 
 module.exports = router;
