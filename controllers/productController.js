@@ -88,16 +88,38 @@ const getProductsPage = asyncHandler(async (req, res) => {
       limit: limit,
       skip: skipVal,
     }
-  ).populate("user", "name address photo").sort("-createdAt")
+  )
+    .populate("user", "name address photo")
+    .sort("-createdAt");
   // const productsLength = await Product.estimatedDocumentCount();
   res.status(200).json(products);
+});
+
+const getAllNewestProducts = asyncHandler(async (req, res) => {
+  const { limit, page } = req.params;
+  let skipVal = limit * (page - 1);
+  const products = await Product.find({},
+    "_id name desc image pricePer expDate price createdAt",
+    // null,
+    {
+      limit: limit,
+      skip: skipVal,
+    }
+  )
+    .populate("user", "name address photo")
+    .sort("-createdAt");
+  if (products) {
+    res.status(200).json(products);
+  } else {
+    res.status(400);
+    throw new Error("bad req");
+  }
 });
 
 //Get Single product
 const getProduct = asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id);
 
-  console.log("error", product);
   if (!product) {
     res.status(404);
     throw new Error("Product not found");
@@ -215,7 +237,9 @@ const getSubscriptionProduct = asyncHandler(async (req, res) => {
     { user: { $in: ids } },
     "_id user name image price pricePer createdAt",
     { limit: limit, skip: skipVal }
-  ).populate("user", "name address photo").sort("-createdAt");
+  )
+    .populate("user", "name address photo")
+    .sort("-createdAt");
   res.status(200).json(searchData);
 });
 
@@ -229,4 +253,5 @@ module.exports = {
   getProductsPage,
   getSomeProduct,
   getSubscriptionProduct,
+  getAllNewestProducts,
 };

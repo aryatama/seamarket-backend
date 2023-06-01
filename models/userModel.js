@@ -75,11 +75,24 @@ const userSchema = mongoose.Schema(
         ref: "Product",
       },
     ],
+    photo_public_id: {
+      type: String,
+    },
   },
   {
     timestamps: true,
+    toJSON: { virtuals: true }, // So `res.json()` and other `JSON.stringify()` functions include virtuals
+    toObject: { virtuals: true },
   }
 );
+let today = new Date().toDateString();
+
+// userSchema.virtual("products", {
+//   ref: "Product",
+//   localField: "_id",
+//   foreignField: "user",
+//   // match: { createdAt: { $gte: today } },
+// });
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
     return next();
