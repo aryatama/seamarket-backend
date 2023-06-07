@@ -98,7 +98,8 @@ const getProductsPage = asyncHandler(async (req, res) => {
 const getAllNewestProducts = asyncHandler(async (req, res) => {
   const { limit, page } = req.params;
   let skipVal = limit * (page - 1);
-  const products = await Product.find({},
+  const products = await Product.find(
+    {},
     "_id name desc image pricePer expDate price createdAt",
     // null,
     {
@@ -206,6 +207,7 @@ const getProductPagination = asyncHandler(async (req, res) => {
   let skipVal = limit * (page - 1);
   const searchData = await Product.find(
     { name: new RegExp(key, "i") },
+    "user name image price pricePer desc saved createdAt",
     { limit: limit, skip: skipVal }
   );
   res.status(200).json(searchData);

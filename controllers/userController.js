@@ -9,6 +9,7 @@ const { fileSizeFormatter } = require("../utils/fileUpload");
 const cloudinary = require("cloudinary").v2;
 const fs = require("fs");
 const { promisify } = require("util");
+const Notification = require("../models/notificationModel");
 const unlinkAsync = promisify(fs.unlink);
 
 const generateToken = (id) => {
@@ -281,7 +282,7 @@ const updateUser = asyncHandler(async (req, res) => {
       fileSize: fileSizeFormatter(req.file.size, 2),
     };
   }
-  
+
   if (user) {
     const {
       name,
@@ -293,7 +294,7 @@ const updateUser = asyncHandler(async (req, res) => {
       availableWA,
       role,
       status,
-      photo_public_id
+      photo_public_id,
     } = user;
     user.email = email;
     user.name = req.body.name || name;
@@ -407,6 +408,23 @@ const subscribe = asyncHandler(async (req, res) => {
   const updatedUser = await userToSub.save();
   const updatedMyUser = await user.save();
 
+  //Notif
+  const notifRes = await Notification.findOne({
+    receiver: id,
+    type: "sub",
+    sender: req.user.id,
+  });
+  if (notifRes) {
+    notifRes.expired = false;
+    await notifRes.save();
+  } else {
+    await Notification.create({
+      receiver: id,
+      type: "sub",
+      sender: [req.user.id],
+    });
+  }
+
   res.status(200).json({ myUser: updatedMyUser, user: updatedUser });
 });
 
@@ -429,12 +447,23 @@ const unsubscribe = asyncHandler(async (req, res) => {
   const updatedUser = await userToSub.save();
   const updatedMyUser = await user.save();
 
+  //Notif
+  const notifRes = await Notification.findOne({
+    receiver: id,
+    type: "sub",
+    sender: req.user.id,
+  });
+  if (notifRes) {
+    notifRes.expired = true;
+    await notifRes.save();
+  }
+
   res.status(200).json({ myUser: updatedMyUser, user: updatedUser });
 });
 
 const saveProduct = asyncHandler(async (req, res) => {
   const { productId } = req.params;
-  console.log("product id", productId);
+  // console.log("product id", productId);
   const product = await Product.findById(productId);
   const user = await User.findById(req.user.id);
   if (!product) {
@@ -442,12 +471,41 @@ const saveProduct = asyncHandler(async (req, res) => {
     throw new Error("Produk tidak ditemukan");
   }
 
+  //Notif
+  const notifRes = await Notification.findOne({
+    receiver: product.user,
+    type: "save",
+    productId: productId,
+  });
+
   if (user.saved.includes(productId)) {
     await product.saver.pull(req.user.id);
     await user.saved.pull(productId);
+    if (notifRes) {
+      if (notifRes.sender.length === 1) {
+        notifRes.expired = true;
+      }
+      await notifRes.sender.pull(req.user.id);
+      await notifRes.save();
+    }
   } else {
     await product.saver.push(req.user.id);
     await user.saved.push(productId);
+    if (notifRes) {
+      if (notifRes.sender.length === 0) {
+        notifRes.expired = false;
+      }
+      await notifRes.sender.push(req.user.id);
+      notifRes.upAt = new Date();
+      await notifRes.save();
+    } else {
+      await Notification.create({
+        receiver: product.user,
+        type: "save",
+        productId: productId,
+        sender: [req.user.id],
+      });
+    }
   }
 
   const updatedProduct = await product.save();
@@ -530,7 +588,7 @@ const getUserByNewProduct = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.id);
   const { subscription, _id } = user;
   // let today = new Date("2023-05-25");
-  console.log(subscription);
+  // console.log(subscription);
   const someUser = await User.aggregate([
     {
       $match: {
