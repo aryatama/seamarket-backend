@@ -508,8 +508,13 @@ const saveProduct = asyncHandler(async (req, res) => {
     }
   }
 
-  const updatedProduct = await product.save();
-  const updatedUser = await user.save();
+  await product.save();
+  await user.save();
+
+  const updatedProduct = await Product.findById(productId).populate(
+    "user",
+    "name _id photo address"
+  );
 
   res.status(200).json({ product: updatedProduct });
 });
@@ -531,7 +536,7 @@ const getSomeUser = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error("bad req");
   }
-  const someUser = await User.find({ _id: { $in: ids } }, "name photo");
+  const someUser = await User.find({ _id: { $in: ids } }, "name role photo");
   res.status(200).json(someUser);
 });
 
