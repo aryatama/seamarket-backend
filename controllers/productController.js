@@ -119,7 +119,10 @@ const getAllNewestProducts = asyncHandler(async (req, res) => {
 
 //Get Single product
 const getProduct = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id);
+  const product = await Product.findById(req.params.id).populate(
+    "user",
+    "name _id address photo"
+  );
 
   if (!product) {
     res.status(404);
