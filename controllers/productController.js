@@ -150,7 +150,7 @@ const deleteProduct = asyncHandler(async (req, res) => {
 });
 
 const updateProduct = asyncHandler(async (req, res) => {
-  const { name, price, desc } = req.body;
+  const { name, price, pricePer, desc } = req.body;
   const { id } = req.params;
 
   const product = await Product.findById(id);
@@ -165,24 +165,27 @@ const updateProduct = asyncHandler(async (req, res) => {
   }
 
   //Handle Image upload
-
   let fileData = {};
   if (req.file) {
-    //Save image to cloudinary
-    let uploadedFile;
     try {
       uploadedFile = await cloudinary.uploader.upload(req.file.path, {
         folder: "Seamarket Post",
         resource_type: "image",
       });
+      await unlinkAsync(req.file.path);
     } catch (err) {
       res.status(500);
       throw new Error("Image could not be uploaded");
     }
+    // console.log(uploadedFile);
+    if (product?.image?.public_id) {
+      await cloudinary.uploader.destroy(product?.image.public_id);
+    }
     fileData = {
-      fileName: req.file.originalname,
-      filePath: uploadedFile.secure_url,
-      fileType: req.file.mimetype,
+      fileName: uploadedFile.original_filename,
+      public_id: uploadedFile.public_id,
+      uri: uploadedFile.secure_url,
+      type: req.file.mimetype,
       fileSize: fileSizeFormatter(req.file.size, 2),
     };
   }
@@ -193,6 +196,7 @@ const updateProduct = asyncHandler(async (req, res) => {
     {
       name,
       price,
+      pricePer,
       desc,
       image: Object.keys(fileData).length === 0 ? product.image : fileData,
     },
@@ -202,7 +206,8 @@ const updateProduct = asyncHandler(async (req, res) => {
     }
   );
 
-  res.status(200).json(updatedProduct);
+  // res.status(200).json(updatedProduct);
+  res.status(200).json({ message: "success" });
 });
 
 const getProductPagination = asyncHandler(async (req, res) => {
