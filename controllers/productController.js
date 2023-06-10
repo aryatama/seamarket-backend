@@ -217,7 +217,7 @@ const getProductPagination = asyncHandler(async (req, res) => {
     { name: new RegExp(key, "i") },
     "user name image price pricePer desc saved createdAt",
     { limit: limit, skip: skipVal }
-  );
+  ).sort("-createdAt");
   res.status(200).json(searchData);
 });
 
