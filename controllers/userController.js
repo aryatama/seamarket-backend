@@ -10,6 +10,7 @@ const cloudinary = require("cloudinary").v2;
 const fs = require("fs");
 const { promisify } = require("util");
 const Notification = require("../models/notificationModel");
+const sendEmail = require("../utils/sendEmail");
 const unlinkAsync = promisify(fs.unlink);
 
 const generateToken = (id) => {
@@ -386,7 +387,18 @@ const forgotPassword = asyncHandler(async (req, res) => {
   <h3>${resetedPassword}</h3>
   `;
 
-  res.send("forgot password");
+  const subject = "Lupa Password Aplikasi"
+  const to = user.email
+  const from = process.env.EMAIL_USER
+
+  try {
+    await sendEmail(from, to, subject, message)
+    res.status(200).json({success : true, message : "Email telah dikirim, mohon periksa email anda"})
+  } catch (err) {
+    res.status(500)
+    throw new Error ('Email gagal terkirim, mohon coba lagi')
+    
+  }
 });
 
 const subscribe = asyncHandler(async (req, res) => {
