@@ -1,8 +1,11 @@
 const multer = require("multer");
+const path = require("path");
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(__dirname, "uploads/");
+    // cb(null, "uploads");
+    // console.log("INI PATH NYA", path.join(__dirname, "upload"));
+    cb(null, __dirname);
   },
   filename: function (req, file, cb) {
     cb(
