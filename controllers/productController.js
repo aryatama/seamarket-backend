@@ -4,6 +4,7 @@ const { fileSizeFormatter } = require("../utils/fileUpload");
 const cloudinary = require("cloudinary").v2;
 const fs = require("fs");
 const { promisify } = require("util");
+const Notification = require("../models/notificationModel");
 const unlinkAsync = promisify(fs.unlink);
 
 const createProduct = asyncHandler(async (req, res) => {
@@ -145,6 +146,7 @@ const deleteProduct = asyncHandler(async (req, res) => {
   }
   await product.deleteOne();
   await cloudinary.uploader.destroy(product.image.public_id);
+  await Notification.deleteOne({ productId: req.params.id });
 
   res.status(200).json({ message: "Berhasil Menghapus Produk" });
 });
