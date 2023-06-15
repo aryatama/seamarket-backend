@@ -25,7 +25,7 @@ router.post("/login", loginUser);
 router.get("/logout", logoutUser);
 router.get("/user", protect, getUser);
 router.get("/user/:id", protect, getUserById);
-router.patch("/updateuser", protect, upload.single("image"), updateUser);
+router.post("/updateuser", protect, upload.single("image"), updateUser);
 router.patch("/changepassword", protect, changePassword);
 router.post("/forgotpassword", forgotPassword);
 router.patch("/subscribe", protect, subscribe);

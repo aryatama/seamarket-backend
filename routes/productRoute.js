@@ -28,7 +28,7 @@ router.post(
   protect,
   getSubscriptionProduct
 );
-router.patch("/:id", protect, upload.single("image"), updateProduct);
+router.post("/:id", protect, upload.single("image"), updateProduct);
 router.delete("/:id", protect, deleteProduct);
 
 module.exports = router;
