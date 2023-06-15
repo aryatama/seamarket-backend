@@ -216,7 +216,7 @@ const getUser = asyncHandler(async (req, res) => {
 
 const getUserById = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);
-  const productCount = await Product.estimatedDocumentCount({
+  const productCount = await Product.countDocuments({
     user: req.params.id,
   });
 
