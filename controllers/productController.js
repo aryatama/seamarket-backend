@@ -163,7 +163,7 @@ const updateProduct = asyncHandler(async (req, res) => {
   }
   if (product.user.toString() !== req.user.id) {
     res.status(401);
-    throw new Error("User not authorized");
+    throw new Error("Sesi anda telah habis, silahkan login");
   }
 
   //Handle Image upload

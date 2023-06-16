@@ -10,7 +10,7 @@ const protect = asyncHandler(async (req, res, next) => {
     
     if (!token) {
       res.status(401);
-      throw new Error("Not authorized, please login");
+      throw new Error("Sesi anda telah habis, silahkan login");
     }
     //Verify Token
     const verified = jwt.verify(token, process.env.JWT_SECRET);
@@ -25,7 +25,7 @@ const protect = asyncHandler(async (req, res, next) => {
     next();
   } catch (err) {
     res.status(401);
-    throw new Error("Not authorized, as please login");
+    throw new Error("Sesi anda telah habis, silahkan login");
   }
 });
 
