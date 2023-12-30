@@ -19,8 +19,10 @@ app.use(express.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(
   cors({
-    origin: ["http://localhost:5000", "https://seamarket-api.up.railway.app"],
+    origin: ["http://localhost:5001", "https://seamarket-api.up.railway.app"],
+    // origin: ["http://localhost:5001"],
     credentials: true,
+    // credentials: false,
   })
 );
 
@@ -39,7 +41,7 @@ app.get("/", (req, res) => {
 //Error Middleware
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 //ConnectDB
 mongoose
   .connect(process.env.MONGO_URI)
