@@ -64,7 +64,7 @@ const getMyProducts = asyncHandler(async (req, res) => {
   let skipVal = limit * (page - 1);
   const products = await Product.find(
     { user: req.user.id },
-    "_id name desc image pricePer expDate price createdAt",
+    "_id name desc image pricePer expDate price saver createdAt",
     {
       limit: limit,
       skip: skipVal,
