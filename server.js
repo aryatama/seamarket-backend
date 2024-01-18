@@ -19,7 +19,9 @@ app.use(express.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(
   cors({
-    origin: ["http://localhost:5001", "https://seamarket-api.up.railway.app"],
+    origin: ["http://localhost:5001", "https://seamarket-backend.vercel.app"],
+    // origin: ["http://localhost:5001", "https://seamarket-api.up.railway.app"],
+    
     // origin: ["http://localhost:5001"],
     credentials: true,
     // credentials: false,
