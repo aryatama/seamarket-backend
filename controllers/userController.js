@@ -651,6 +651,51 @@ const getUserByNewProduct = asyncHandler(async (req, res) => {
   }
 });
 
+const getUserByNewProductByGuest = asyncHandler(async (req, res) => {
+  const someUser = await User.aggregate([
+    {
+      $match: {
+        role: "penjual",
+      },
+    },
+    {
+      $lookup: {
+        from: "products",
+        localField: "_id",
+        foreignField: "user",
+        as: "products",
+      },
+    },
+    { $unwind: "$products" },
+    // {
+    //   $match: {
+    //     "products.createdAt": { $gte: new Date(today) },
+    //   },
+    // },
+    {
+      $sort: {
+        "products.createdAt": -1,
+      },
+    },
+    { $limit: 10 },
+    {
+      $group: {
+        _id: "$_id",
+        name: { $first: "$name" },
+        photo: { $first: "$photo" },
+        address: { $first: "$address" },
+      },
+    },
+  ]);
+
+  if (someUser) {
+    res.status(200).json(someUser);
+  } else {
+    res.status(400);
+    throw new Error("getUserByNewProduct");
+  }
+});
+
 module.exports = {
   registerUser,
   loginUser,
@@ -667,6 +712,7 @@ module.exports = {
   saveProduct,
   getSubUserByNewProduct,
   getUserByNewProduct,
+  getUserByNewProductByGuest
 };
 
 // //Create reset Token

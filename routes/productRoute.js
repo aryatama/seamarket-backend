@@ -17,12 +17,16 @@ const { upload } = require("../utils/fileUpload");
 
 const router = express.Router();
 
-router.get("/:id", protect, getProduct);
+router.get("/:id", getProduct);
 router.get("/:limit/:page", protect, getMyProducts);
-router.get("/:id/:limit/:page", protect, getProductsPage);
-router.get("/search/:limit/:page/:key", protect, getProductPagination);
-router.get("/searchmyproduct/:limit/:page/:key", protect, getMyProductPagination);
-router.get("/product/all/:limit/:page", protect, getAllNewestProducts);
+router.get("/:id/:limit/:page", getProductsPage);
+router.get("/search/:limit/:page/:key", getProductPagination);
+router.get(
+  "/searchmyproduct/:limit/:page/:key",
+  protect,
+  getMyProductPagination
+);
+router.get("/product/all/:limit/:page", getAllNewestProducts);
 router.post("/", protect, upload.single("image"), createProduct);
 router.post("/getsomeproduct", protect, getSomeProduct);
 router.post(
